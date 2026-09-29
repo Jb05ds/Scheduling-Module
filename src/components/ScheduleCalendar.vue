@@ -11,6 +11,8 @@ import '@fullcalendar/vue3/skeleton.css'
 import '@fullcalendar/vue3/themes/classic/theme.css'
 import '@fullcalendar/vue3/themes/classic/palette.css'
 
+import { apiFetch } from '../services/api.js'
+
 const emit = defineEmits(['schedule-clicked'])
 
 const error = ref('')
@@ -62,11 +64,11 @@ async function loadSchedules(filters = {}) {
     }
 
     const queryString = params.toString()
-    const url = queryString
-      ? `http://127.0.0.1:8000/api/schedules?${queryString}`
-      : 'http://127.0.0.1:8000/api/schedules'
+    const path = queryString
+      ? `/schedules?${queryString}`
+      : '/schedules'
 
-    const response = await fetch(url)
+    const response = await apiFetch(path)
 
     if (!response.ok) {
       throw new Error('Failed to fetch schedules.')

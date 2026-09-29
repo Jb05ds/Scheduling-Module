@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import ScheduleCalendar from '../components/ScheduleCalendar.vue'
+import { apiFetch } from '../services/api'
 
 const calendarRef = ref(null)
 const scheduleForm = ref(null)
@@ -19,6 +20,15 @@ const editing = ref(false)
 const editForm = ref(null)
 const updating = ref(false)
 const actionError = ref('')
+
+const form = reactive({
+  title: '',
+  description: '',
+  scheduled_date: '',
+  start_time: '',
+  end_time: '',
+  assigned_to: null,
+})
 
 const filters = reactive({
   search: '',
@@ -43,7 +53,7 @@ const requiredRule = (value) => !!value || 'This field is required.'
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/users')
+    const response = await apiFetch('/users')
 
     if (!response.ok) {
       throw new Error('Could not load users.')
@@ -76,14 +86,7 @@ async function showScheduleDetails(id) {
   selectedSchedule.value = null
 
   try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/api/schedules/${id}`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-      },
-    )
+    const response = await apiFetch(`/schedules/${id}`)
 
     const result = await response.json()
 
@@ -136,12 +139,8 @@ async function updateSchedule() {
   try {
     const id = selectedSchedule.value.id
 
-    const response = await fetch(`http://127.0.0.1:8000/api/schedules/${id}`, {
+    const response = await apiFetch(`/schedules/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
       body: JSON.stringify({
         title: form.title,
         description: form.description || null,
@@ -182,13 +181,9 @@ async function cancelSchedule() {
   try {
     const id = selectedSchedule.value.id
 
-    const response = await fetch(
-      `http://127.0.0.1:8000/api/schedules/${id}/cancel`,
-      {
-        method: 'PATCH',
-        headers: { Accept: 'application/json' },
-      },
-    )
+    const response = await apiFetch(`/schedules/${id}/cancel`, {
+      method: 'PATCH',
+    })
 
     const result = await response.json()
 
@@ -212,9 +207,8 @@ async function deleteSchedule() {
   try {
     const id = selectedSchedule.value.id
 
-    const response = await fetch(`http://127.0.0.1:8000/api/schedules/${id}`, {
+    const response = await apiFetch(`/schedules/${id}`, {
       method: 'DELETE',
-      headers: { Accept: 'application/json' },
     })
 
     if (!response.ok) {
@@ -245,13 +239,14 @@ async function createSchedule() {
 
   saving.value = true
 
+  const payload = {
+    ...form,
+    assigned_to: form.assigned_to || null,
+  }
+
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/schedules', {
+    const response = await apiFetch('/schedules', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
       body: JSON.stringify({
         title: form.title,
         description: form.description || null,
@@ -386,7 +381,10 @@ async function createSchedule() {
 
       <v-divider class="my-4" />
 
-      <ScheduleCalendar ref="calendarRef" />
+      <ScheduleCalendar
+        ref="calendarRef"
+        @schedule-clicked="showScheduleDetails"
+/>
     </v-card>
 
     <v-dialog v-model="dialog" max-width="600">
