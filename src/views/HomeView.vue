@@ -1,7 +1,10 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import ScheduleCalendar from '../components/ScheduleCalendar.vue'
 import { apiFetch } from '../services/api'
+
+const router = useRouter()
 
 const calendarRef = ref(null)
 const scheduleForm = ref(null)
@@ -49,6 +52,21 @@ function clearFilters() {
 
   applyFilters()
 }
+
+async function logout() {
+  try {
+    await apiFetch('/logout', {
+      method: 'POST',
+    })
+  } catch (error) {
+    console.error('Logout request failed:', error)
+  } finally {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    router.push('/login')
+  }
+}
+
 const requiredRule = (value) => !!value || 'This field is required.'
 
 onMounted(async () => {
@@ -295,13 +313,22 @@ async function createSchedule() {
         </p>
       </v-col>
 
-      <v-col cols="auto">
+     <v-col cols="auto" class="d-flex align-center ga-2">
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
           @click="openDialog"
         >
           Create Schedule
+        </v-btn>
+
+        <v-btn
+          color="error"
+          variant="outlined"
+          prepend-icon="mdi-logout"
+          @click="logout"
+        >
+          Log Out
         </v-btn>
       </v-col>
     </v-row>
@@ -651,4 +678,4 @@ async function createSchedule() {
       {{ detailsError }}
     </v-alert>
   </v-container>
-</template>
+</template> 
