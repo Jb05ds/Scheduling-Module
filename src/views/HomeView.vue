@@ -384,7 +384,7 @@ async function createSchedule() {
       <ScheduleCalendar
         ref="calendarRef"
         @schedule-clicked="showScheduleDetails"
-/>
+      />
     </v-card>
 
     <v-dialog v-model="dialog" max-width="600">
