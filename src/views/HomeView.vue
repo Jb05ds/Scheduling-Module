@@ -216,6 +216,32 @@ async function cancelSchedule() {
   }
 }
 
+async function completeSchedule() {
+  if (!selectedSchedule.value) return
+  if (!window.confirm('Complete this schedule?')) return
+
+  actionError.value = ''
+
+  try {
+    const id = selectedSchedule.value.id
+
+    const response = await apiFetch(`/schedules/${id}/complete`, {
+      method: 'PATCH',
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Could not complete schedule.')
+    }
+
+    detailsDialog.value = false
+    await calendarRef.value?.loadSchedules(filters)
+  } catch (error) {
+    actionError.value = error.message
+  }
+}
+
 async function deleteSchedule() {
   if (!selectedSchedule.value) return
   if (!window.confirm('Permanently delete this schedule?')) return
@@ -654,6 +680,14 @@ async function createSchedule() {
                 @click="cancelSchedule"
               >
                 Cancel Schedule
+              </v-btn>
+
+              <v-btn
+              v-if="selectedSchedule.status !== 'scheduled'"
+              color="primary"
+              variant="tonal"
+              @click="completeSchedule">
+                Complete
               </v-btn>
 
               <v-btn
