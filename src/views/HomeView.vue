@@ -23,6 +23,9 @@ const editing = ref(false)
 const editForm = ref(null)
 const updating = ref(false)
 const actionError = ref('')
+const cancelLoading = ref(false)
+const completeLoading = ref(false)
+const deleteLoading = ref(false)
 
 const form = reactive({
   title: '',
@@ -51,6 +54,30 @@ function clearFilters() {
   filters.assigned_to = null
 
   applyFilters()
+}
+
+function formatDate(date) {
+  if (!date) return ''
+
+  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+function formatTime(time) {
+  if (!time) return ''
+
+  const [hours, minutes] = time.split(':')
+
+  const date = new Date()
+  date.setHours(Number(hours), Number(minutes), 0, 0)
+
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 async function logout() {
@@ -170,6 +197,7 @@ async function updateSchedule() {
       }),
     })
 
+
     const result = await response.json()
 
     if (!response.ok) {
@@ -199,6 +227,8 @@ async function cancelSchedule() {
   try {
     const id = selectedSchedule.value.id
 
+    cancelLoading.value = true
+
     const response = await apiFetch(`/schedules/${id}/cancel`, {
       method: 'PATCH',
     })
@@ -214,6 +244,8 @@ async function cancelSchedule() {
     await calendarRef.value?.loadSchedules(filters)
   } catch (error) {
     actionError.value = error.message
+  } finally {
+    cancelLoading.value = false
   }
 }
 
@@ -225,6 +257,8 @@ async function completeSchedule() {
 
   try {
     const id = selectedSchedule.value.id
+
+    completeLoading.value = true
 
     const response = await apiFetch(`/schedules/${id}/complete`, {
       method: 'PATCH',
@@ -240,6 +274,8 @@ async function completeSchedule() {
     await calendarRef.value?.loadSchedules(filters)
   } catch (error) {
     actionError.value = error.message
+  } finally {
+    completeLoading.value = false
   }
 }
 
@@ -251,6 +287,8 @@ async function deleteSchedule() {
 
   try {
     const id = selectedSchedule.value.id
+
+    deleteLoading.value = true
 
     const response = await apiFetch(`/schedules/${id}`, {
       method: 'DELETE',
@@ -265,6 +303,8 @@ async function deleteSchedule() {
     await calendarRef.value?.loadSchedules(filters)
   } catch (error) {
     actionError.value = error.message
+  } finally {
+    deleteLoading.value = false
   }
 }
 
@@ -633,10 +673,15 @@ async function createSchedule() {
               {{ selectedSchedule.description || 'No description provided.' }}
             </p>
 
-            <p><strong>Date:</strong> {{ selectedSchedule.scheduled_date }}</p>
+            <p>
+              <strong>Date:</strong>
+              {{ formatDate(selectedSchedule.scheduled_date) }}
+            </p>
+
             <p>
               <strong>Time:</strong>
-              {{ selectedSchedule.start_time }} – {{ selectedSchedule.end_time }}
+              {{ formatTime(selectedSchedule.start_time) }} –
+              {{ formatTime(selectedSchedule.end_time) }}
             </p>
               <div class="mb-4 d-flex align-center">
                 <strong class="mr-2">Status:</strong>
@@ -700,6 +745,7 @@ async function createSchedule() {
                 v-if="selectedSchedule.status !== 'cancelled' && selectedSchedule.status !== 'completed'"
                 color="warning"
                 variant="tonal"
+                :loading= "cancelLoading"
                 @click="cancelSchedule"
               >
                 Cancel Schedule
@@ -709,6 +755,7 @@ async function createSchedule() {
               v-if="selectedSchedule.status !== 'completed' && selectedSchedule.status !== 'cancelled'"
               color="primary"
               variant="tonal"
+              :loading="completeLoading"
               @click="completeSchedule">
                 Complete
               </v-btn>
@@ -716,6 +763,7 @@ async function createSchedule() {
               <v-btn
                 color="error"
                 variant="tonal"
+                :loading="deleteLoading"
                 @click="deleteSchedule"
               >
                 Delete
