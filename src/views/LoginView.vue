@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { apiFetch } from '../services/api.js'
+
 const router = useRouter()
 
 const email = ref('')
@@ -14,7 +16,7 @@ async function login() {
   errorMessage.value = ''
 
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/login', {
+    const response = await apiFetch('/login', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
