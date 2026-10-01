@@ -638,7 +638,29 @@ async function createSchedule() {
               <strong>Time:</strong>
               {{ selectedSchedule.start_time }} – {{ selectedSchedule.end_time }}
             </p>
-            <p><strong>Status:</strong> {{ selectedSchedule.status }}</p>
+              <div class="mb-4 d-flex align-center">
+                <strong class="mr-2">Status:</strong>
+
+                <v-chip
+                  size="small"
+                  :color="
+                    selectedSchedule.status === 'scheduled'
+                      ? 'primary'
+                      : selectedSchedule.status === 'completed'
+                        ? 'success'
+                        : 'error'
+                  "
+                  variant="tonal"
+                >
+                  {{
+                    selectedSchedule.status === 'scheduled'
+                      ? 'Scheduled'
+                      : selectedSchedule.status === 'completed'
+                        ? 'Completed'
+                        : 'Cancelled'
+                  }}
+                </v-chip>
+              </div>
             <p>
               <strong>Assigned to:</strong>
               {{ selectedSchedule.assignee?.name || 'Unassigned' }}
