@@ -203,6 +203,7 @@ async function cancelSchedule() {
       method: 'PATCH',
     })
 
+
     const result = await response.json()
 
     if (!response.ok) {
@@ -665,7 +666,7 @@ async function createSchedule() {
               </v-btn>
 
               <v-btn
-                v-if="selectedSchedule.status !== 'cancelled'"
+                v-if="selectedSchedule.status !== 'cancelled' && selectedSchedule.status !== 'completed'"
                 color="primary"
                 variant="tonal"
                 @click="startEditing"
@@ -674,7 +675,7 @@ async function createSchedule() {
               </v-btn>
 
               <v-btn
-                v-if="selectedSchedule.status !== 'cancelled'"
+                v-if="selectedSchedule.status !== 'cancelled' && selectedSchedule.status !== 'completed'"
                 color="warning"
                 variant="tonal"
                 @click="cancelSchedule"
@@ -683,7 +684,7 @@ async function createSchedule() {
               </v-btn>
 
               <v-btn
-              v-if="selectedSchedule.status !== 'scheduled'"
+              v-if="selectedSchedule.status !== 'completed' && selectedSchedule.status !== 'cancelled'"
               color="primary"
               variant="tonal"
               @click="completeSchedule">
