@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ScheduleCalendar from '../components/ScheduleCalendar.vue'
+import ScheduleDetails from '../components/scheduleDetails.vue'
 import { apiFetch } from '../services/api'
 
 const router = useRouter()
@@ -475,10 +476,21 @@ async function createSchedule() {
 
       <v-divider class="my-4" />
 
-      <ScheduleCalendar
-        ref="calendarRef"
-        @schedule-clicked="showScheduleDetails"
-      />
+      <v-container fluid class="pa-0 ma-5">
+        <v-row justify="space-between"  align="center" no-gutters class="ga-16">
+           <v-col cols="9">
+              <ScheduleCalendar
+                ref="calendarRef"
+                @schedule-clicked="showScheduleDetails"
+              />
+            </v-col>
+            <v-col cols="auto" class="flex-grow-1">
+              <p>aefrwefwwwwwwwwwewfewfefhgrfhggs</p>
+            </v-col>
+        </v-row>
+        
+      </v-container>
+      
     </v-card>
 
     <v-dialog v-model="dialog" max-width="600">
@@ -578,200 +590,26 @@ async function createSchedule() {
     </v-dialog>
 
     <v-dialog v-model="detailsDialog" max-width="600">
-      <v-card v-if="selectedSchedule">
-        <v-card-title class="text-h5 pa-5">
-          {{ editing ? 'Edit Schedule' : 'Schedule Details' }}
-        </v-card-title>
-
-        <v-divider />
-
-        <v-card-text class="pa-5">
-          <v-form
-            v-if="editing"
-            ref="editForm"
-            @submit.prevent="updateSchedule"
-          >
-            <v-text-field
-              v-model="form.title"
-              label="Title"
-              :rules="[requiredRule]"
-              required
-            />
-
-            <v-textarea
-              v-model="form.description"
-              label="Description"
-              rows="3"
-              auto-grow
-            />
-
-            <v-text-field
-              v-model="form.scheduled_date"
-              label="Date"
-              type="date"
-              :rules="[requiredRule]"
-              required
-            />
-
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.start_time"
-                  label="Start Time"
-                  type="time"
-                  :rules="[requiredRule]"
-                  required
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.end_time"
-                  label="End Time"
-                  type="time"
-                  :rules="[requiredRule]"
-                  required
-                />
-              </v-col>
-            </v-row>
-
-            <v-select
-              v-model="form.assigned_to"
-              label="Assign To (optional)"
-              :items="users"
-              item-title="name"
-              item-value="id"
-              clearable
-            />
-
-            <v-alert
-              v-if="actionError"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-            >
-              {{ actionError }}
-            </v-alert>
-
-            <div class="d-flex justify-end ga-2">
-              <v-btn variant="text" :disabled="updating" @click="stopEditing">
-                Back
-              </v-btn>
-
-              <v-btn color="primary" type="submit" :loading="updating">
-                Save Changes
-              </v-btn>
-            </div>
-          </v-form>
-
-          <div v-else>
-            <div class="text-h6 mb-2">
-              {{ selectedSchedule.title }}
-            </div>
-
-            <p class="mb-3">
-              {{ selectedSchedule.description || 'No description provided.' }}
-            </p>
-
-            <p>
-              <strong>Date:</strong>
-              {{ formatDate(selectedSchedule.scheduled_date) }}
-            </p>
-
-            <p>
-              <strong>Time:</strong>
-              {{ formatTime(selectedSchedule.start_time) }} –
-              {{ formatTime(selectedSchedule.end_time) }}
-            </p>
-              <div class="mb-4 d-flex align-center">
-                <strong class="mr-2">Status:</strong>
-
-                <v-chip
-                  size="small"
-                  :color="
-                    selectedSchedule.status === 'scheduled'
-                      ? 'primary'
-                      : selectedSchedule.status === 'completed'
-                        ? 'success'
-                        : 'error'
-                  "
-                  variant="tonal"
-                >
-                  {{
-                    selectedSchedule.status === 'scheduled'
-                      ? 'Scheduled'
-                      : selectedSchedule.status === 'completed'
-                        ? 'Completed'
-                        : 'Cancelled'
-                  }}
-                </v-chip>
-              </div>
-            <p>
-              <strong>Assigned to:</strong>
-              {{ selectedSchedule.assignee?.name || 'Unassigned' }}
-            </p>
-            <p>
-              <strong>Created by:</strong>
-              {{ selectedSchedule.creator?.name || 'Unknown' }}
-            </p>
-
-            <v-alert
-              v-if="actionError"
-              type="error"
-              variant="tonal"
-              class="mt-4"
-            >
-              {{ actionError }}
-            </v-alert>
-
-            <div class="d-flex justify-end flex-wrap ga-2 mt-5">
-              <v-btn
-                variant="text"
-                @click="detailsDialog = false"
-              >
-                Close
-              </v-btn>
-
-              <v-btn
-                v-if="selectedSchedule.status !== 'cancelled' && selectedSchedule.status !== 'completed'"
-                color="primary"
-                variant="tonal"
-                @click="startEditing"
-              >
-                Edit
-              </v-btn>
-
-              <v-btn
-                v-if="selectedSchedule.status !== 'cancelled' && selectedSchedule.status !== 'completed'"
-                color="warning"
-                variant="tonal"
-                :loading= "cancelLoading"
-                @click="cancelSchedule"
-              >
-                Cancel Schedule
-              </v-btn>
-
-              <v-btn
-              v-if="selectedSchedule.status !== 'completed' && selectedSchedule.status !== 'cancelled'"
-              color="primary"
-              variant="tonal"
-              :loading="completeLoading"
-              @click="completeSchedule">
-                Complete
-              </v-btn>
-
-              <v-btn
-                color="error"
-                variant="tonal"
-                :loading="deleteLoading"
-                @click="deleteSchedule"
-              >
-                Delete
-              </v-btn>
-            </div>
-          </div>
-        </v-card-text>
-      </v-card>
+      <ScheduleDetails
+        v-if="selectedSchedule"
+        :schedule="selectedSchedule"
+        :editing="editing"
+        :form="form"
+        :users="users"
+        :required-rule="requiredRule"
+        :action-error="actionError"
+        :updating="updating"
+        :cancel-loading="cancelLoading"
+        :complete-loading="completeLoading"
+        :delete-loading="deleteLoading"
+        @edit="startEditing"
+        @back="stopEditing"
+        @save="updateSchedule"
+        @cancel="cancelSchedule"
+        @complete="completeSchedule"
+        @delete="deleteSchedule"
+        @close="detailsDialog = false"
+      />
     </v-dialog>
 
     <v-alert
