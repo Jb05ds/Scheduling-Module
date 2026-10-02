@@ -1,4 +1,5 @@
 <script setup>
+/* eslint-disable vue/no-mutating-props */
 import { computed, ref } from 'vue'
 
 const props = defineProps({
@@ -12,6 +13,8 @@ const props = defineProps({
   cancelLoading: Boolean,
   completeLoading: Boolean,
   deleteLoading: Boolean,
+  // Only the creator can edit, cancel or delete; the assignee can only complete.
+  canManage: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['edit', 'back', 'save', 'cancel', 'complete', 'delete', 'close'])
@@ -92,6 +95,7 @@ async function onSave() {
 
 <template>
   <v-card theme="light" rounded="xl" class="details-card">
+    <!-- Header -->
     <div class="details-head">
       <div class="head-main">
         <span
@@ -117,6 +121,7 @@ async function onSave() {
       />
     </div>
 
+    <!-- View mode -->
     <template v-if="!editing">
       <v-card-text class="details-body">
         <ul class="info-list">
@@ -196,6 +201,7 @@ async function onSave() {
 
       <div class="details-actions">
         <v-btn
+          v-if="canManage"
           icon="mdi-delete-outline"
           color="error"
           variant="text"
@@ -208,7 +214,7 @@ async function onSave() {
         <v-spacer />
 
         <v-btn
-          v-if="isScheduled"
+          v-if="isScheduled && canManage"
           variant="text"
           rounded="lg"
           class="text-none"
@@ -231,7 +237,7 @@ async function onSave() {
         </v-btn>
 
         <v-btn
-          v-if="isScheduled"
+          v-if="isScheduled && canManage"
           variant="tonal"
           rounded="lg"
           prepend-icon="mdi-pencil-outline"
@@ -258,6 +264,7 @@ async function onSave() {
       </div>
     </template>
 
+    <!-- Edit mode -->
     <v-form v-else ref="editFormRef" @submit.prevent="onSave">
       <v-card-text class="details-body">
         <v-text-field
@@ -361,6 +368,7 @@ async function onSave() {
 </template>
 
 <style scoped>
+/* Dialogs render outside the page root, so the tokens live on the card. */
 .details-card {
   --ink: #17202e;
   --muted: #647084;
@@ -409,6 +417,7 @@ async function onSave() {
   padding: 12px 24px 8px;
 }
 
+/* Info rows */
 .info-list {
   display: flex;
   flex-direction: column;
@@ -467,6 +476,7 @@ async function onSave() {
   font-weight: 700;
 }
 
+/* Description */
 .description {
   padding: 14px 16px;
   border-radius: 14px;
@@ -480,11 +490,12 @@ async function onSave() {
   line-height: 1.55;
 }
 
+/* Actions */
 .details-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-
+  gap: 8px;
   padding: 14px 24px 20px;
   border-top: 1px solid var(--line);
   margin-top: 8px;

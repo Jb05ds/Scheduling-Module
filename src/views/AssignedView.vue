@@ -1,6 +1,7 @@
 <script setup>
-/* "My calendar": schedules assigned to me, plus personal ones only I can see. */
-import { onMounted, reactive, ref } from 'vue'
+/* "Assigned by me": schedules I created for other people.
+   They show on the assignee's calendar, not mine. */
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import '../assets/schedule-page.css'
 
@@ -14,7 +15,13 @@ import { apiFetch } from '../services/api'
 import { getCurrentUser } from '../services/auth'
 import { useScheduleActions } from '../composables/useScheduleActions'
 import { useUpcomingSchedules } from '../composables/useUpcomingSchedules'
-import { dayNumber, formatTime, monthShort, relativeDay } from '../utils/scheduleFormat'
+import {
+  dayNumber,
+  formatTime,
+  initialsOf,
+  monthShort,
+  relativeDay,
+} from '../utils/scheduleFormat'
 
 const me = getCurrentUser()
 
@@ -26,9 +33,13 @@ const usersError = ref('')
 const filters = reactive({
   search: '',
   status: '',
+  assigned_to: null,
 })
 
-const { upcoming, loadUpcoming } = useUpcomingSchedules('mine', 5)
+// Everyone except me, since a schedule for myself belongs on "My calendar".
+const otherUsers = computed(() => users.value.filter((user) => user.id !== me?.id))
+
+const { upcoming, loadUpcoming } = useUpcomingSchedules('assigned', 8)
 
 async function refresh() {
   await calendarRef.value?.loadSchedules(filters)
@@ -63,16 +74,11 @@ function applyFilters() {
 function clearFilters() {
   filters.search = ''
   filters.status = ''
+  filters.assigned_to = null
   applyFilters()
 }
 
 const requiredRule = (value) => !!value || 'This field is required.'
-
-// Shows who gave me a schedule, when it wasn't me.
-function fromLabel(schedule) {
-  const creatorId = Number(schedule.created_by)
-  return creatorId !== Number(me?.id) ? schedule.creator?.name : null
-}
 
 onMounted(async () => {
   loadUpcoming()
@@ -86,7 +92,7 @@ onMounted(async () => {
 
     users.value = (await response.json()).data
   } catch (error) {
-    usersError.value = 'Could not load users.'
+    usersError.value = 'Could not load users, so you can not assign schedules right now.'
     console.error(error)
   }
 })
@@ -111,6 +117,9 @@ onMounted(async () => {
 
       <ScheduleFilters
         :filters="filters"
+        :users="otherUsers"
+        show-assignee
+        assignee-label="Assigned to"
         @apply="applyFilters"
         @clear="clearFilters"
       />
@@ -120,16 +129,16 @@ onMounted(async () => {
           <section class="sch-panel h-100">
             <div class="sch-panel-head">
               <div>
-                <h2 class="sch-panel-title">My calendar</h2>
+                <h2 class="sch-panel-title">Assigned by me</h2>
                 <p class="sch-panel-sub">
-                  Your own schedules and anything assigned to you. Only you can see these.
+                  Schedules you created for other people. They appear on their calendar, not yours.
                 </p>
               </div>
             </div>
 
             <ScheduleCalendar
               ref="calendarRef"
-              scope="mine"
+              scope="assigned"
               @schedule-clicked="showScheduleDetails"
             >
               <template #actions>
@@ -137,11 +146,11 @@ onMounted(async () => {
                   color="primary"
                   rounded="lg"
                   elevation="0"
-                  prepend-icon="mdi-plus"
+                  prepend-icon="mdi-account-arrow-right-outline"
                   class="text-none font-weight-semibold"
                   @click="createDialog = true"
                 >
-                  New schedule
+                  Assign schedule
                 </v-btn>
               </template>
             </ScheduleCalendar>
@@ -152,8 +161,8 @@ onMounted(async () => {
           <section class="sch-panel h-100">
             <div class="sch-panel-head">
               <div>
-                <h2 class="sch-panel-title">Up next</h2>
-                <p class="sch-panel-sub">Your next scheduled activities.</p>
+                <h2 class="sch-panel-title">Upcoming assignments</h2>
+                <p class="sch-panel-sub">Delete one here if it's no longer needed.</p>
               </div>
 
               <v-chip size="small" color="primary" variant="flat">
@@ -162,13 +171,14 @@ onMounted(async () => {
             </div>
 
             <div v-if="upcoming.length" class="sch-upcoming-list">
-              <button
-                v-for="(schedule, index) in upcoming"
+              <div
+                v-for="schedule in upcoming"
                 :key="schedule.id"
-                type="button"
                 class="sch-upcoming-item"
-                :class="{ 'is-next': index === 0 }"
+                role="button"
+                tabindex="0"
                 @click="showScheduleDetails(schedule.id)"
+                @keydown.enter.self="showScheduleDetails(schedule.id)"
               >
                 <div class="sch-date-tile">
                   <span class="sch-date-tile__day">{{ dayNumber(schedule.scheduled_date) }}</span>
@@ -184,23 +194,33 @@ onMounted(async () => {
                     {{ formatTime(schedule.start_time) }} – {{ formatTime(schedule.end_time) }}
                   </div>
 
-                  <div v-if="fromLabel(schedule)" class="sch-upcoming-meta">
-                    <v-icon icon="mdi-account-arrow-left-outline" size="15" />
-                    From {{ fromLabel(schedule) }}
+                  <div v-if="schedule.assignee" class="sch-upcoming-meta">
+                    <span class="sch-avatar">{{ initialsOf(schedule.assignee.name) }}</span>
+                    {{ schedule.assignee.name }}
                   </div>
                 </div>
 
-                <v-icon icon="mdi-chevron-right" size="20" class="sch-chevron" />
-              </button>
+                <v-btn
+                  icon="mdi-delete-outline"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  title="Delete schedule"
+                  :disabled="deleteLoading"
+                  @click.stop="deleteSchedule(schedule.id)"
+                />
+              </div>
             </div>
 
             <div v-else class="sch-empty">
               <div class="sch-empty__icon">
-                <v-icon icon="mdi-calendar-check-outline" size="32" />
+                <v-icon icon="mdi-account-arrow-right-outline" size="32" />
               </div>
 
-              <div class="sch-empty__title">Nothing coming up</div>
-              <p class="sch-empty__text">Create a schedule and it will show up here.</p>
+              <div class="sch-empty__title">Nothing assigned yet</div>
+              <p class="sch-empty__text">
+                Schedules you assign to other people will be listed here.
+              </p>
 
               <v-btn
                 color="primary"
@@ -210,7 +230,7 @@ onMounted(async () => {
                 class="text-none mt-4"
                 @click="createDialog = true"
               >
-                New schedule
+                Assign schedule
               </v-btn>
             </div>
           </section>
@@ -232,7 +252,7 @@ onMounted(async () => {
 
     <CreateScheduleDialog
       v-model="createDialog"
-      mode="personal"
+      mode="assign"
       :users="users"
       @created="refresh"
     />
@@ -243,7 +263,7 @@ onMounted(async () => {
         :schedule="selectedSchedule"
         :editing="editing"
         :form="form"
-        :users="users"
+        :users="otherUsers"
         :required-rule="requiredRule"
         :action-error="actionError"
         :updating="updating"
