@@ -1,5 +1,4 @@
 <script setup>
-/* "My calendar": schedules assigned to me, plus personal ones only I can see. */
 import { onMounted, reactive, ref } from 'vue'
 
 import '../assets/schedule-page.css'

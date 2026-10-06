@@ -124,12 +124,6 @@ const calendarOptions = ref({
     right: 'dayGridMonth,timeGridWeek,timeGridDay',
   },
 
-  buttonText: {
-    month: 'Month',
-    week: 'Week',
-    day: 'Day',
-  },
-
   eventClick(info) {
     emit('schedule-clicked', info.event.id)
   },

@@ -1,4 +1,3 @@
-/* Service worker: shows push notifications and opens the app when one is clicked. */
 
 self.addEventListener('install', () => self.skipWaiting())
 
