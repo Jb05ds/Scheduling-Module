@@ -1,8 +1,57 @@
 <script setup>
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { logoutUser } from '../services/auth'
+import {
+  disablePush,
+  enablePush,
+  getPushStatus,
+  syncPushSubscription,
+} from '../services/push'
 
 const router = useRouter()
+
+const pushStatus = ref('unsupported')
+const pushBusy = ref(false)
+const pushError = ref('')
+
+const showPushError = computed({
+  get: () => !!pushError.value,
+  set: (open) => {
+    if (!open) pushError.value = ''
+  },
+})
+
+async function refreshPushStatus() {
+  pushStatus.value = await getPushStatus()
+}
+
+async function togglePush() {
+  pushBusy.value = true
+  pushError.value = ''
+
+  try {
+    if (pushStatus.value === 'subscribed') {
+      await disablePush()
+    } else {
+      await enablePush()
+    }
+  } catch (error) {
+    pushError.value = error.message || 'Could not change notification settings.'
+  } finally {
+    await refreshPushStatus()
+    pushBusy.value = false
+  }
+}
+
+onMounted(async () => {
+  await refreshPushStatus()
+
+  // Make sure this browser's subscription belongs to whoever is logged in now.
+  if (pushStatus.value === 'subscribed') {
+    syncPushSubscription().catch((error) => console.error(error))
+  }
+})
 
 const todayLabel = new Date().toLocaleDateString('en-US', {
   weekday: 'long',
@@ -39,6 +88,34 @@ const todayLabel = new Date().toLocaleDateString('en-US', {
         </nav>
 
         <v-btn
+          v-if="pushStatus !== 'unsupported'"
+          :color="pushStatus === 'subscribed' ? 'primary' : undefined"
+          :variant="pushStatus === 'subscribed' ? 'tonal' : 'outlined'"
+          :prepend-icon="
+            pushStatus === 'subscribed'
+              ? 'mdi-bell-ring-outline'
+              : pushStatus === 'denied'
+                ? 'mdi-bell-off-outline'
+                : 'mdi-bell-outline'
+          "
+          size="large"
+          rounded="lg"
+          class="text-none font-weight-semibold"
+          :loading="pushBusy"
+          :disabled="pushStatus === 'denied'"
+          :title="
+            pushStatus === 'denied'
+              ? 'Notifications are blocked in your browser settings'
+              : pushStatus === 'subscribed'
+                ? 'Turn notifications off on this device'
+                : 'Get notified when someone assigns you a schedule'
+          "
+          @click="togglePush"
+        >
+          {{ pushStatus === 'subscribed' ? 'Notifications on' : pushStatus === 'denied' ? 'Blocked' : 'Enable notifications' }}
+        </v-btn>
+
+        <v-btn
           color="error"
           variant="outlined"
           size="large"
@@ -50,6 +127,9 @@ const todayLabel = new Date().toLocaleDateString('en-US', {
           Log out
         </v-btn>
       </div>
+      <v-snackbar v-model="showPushError" color="error" :timeout="5000">
+        {{ pushError }}
+      </v-snackbar>
     </v-theme-provider>
   </header>
 </template>
