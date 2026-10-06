@@ -1,4 +1,5 @@
 import { apiFetch } from './api'
+import { forgetPushSubscription } from './push'
 
 export function getCurrentUser() {
   try {
@@ -9,6 +10,12 @@ export function getCurrentUser() {
 }
 
 export async function logoutUser(router) {
+  try {
+    await forgetPushSubscription()
+  } catch (error) {
+    console.error('Could not detach push subscription:', error)
+  }
+
   try {
     await apiFetch('/logout', { method: 'POST' })
   } catch (error) {
