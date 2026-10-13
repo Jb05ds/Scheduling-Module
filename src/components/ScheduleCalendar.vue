@@ -14,7 +14,7 @@ import '@fullcalendar/vue3/themes/classic/palette.css'
 import { apiFetch } from '../services/api.js'
 
 const props = defineProps({
-  // 'mine' = my own calendar, 'assigned' = schedules I created for other people
+
   scope: { type: String, default: 'mine' },
 })
 
@@ -23,7 +23,6 @@ const emit = defineEmits(['schedule-clicked'])
 const error = ref('')
 const fullCalendar = ref(null)
 
-/* ---------- Month / year navigation ---------- */
 
 const today = new Date()
 const viewMonth = ref(today.getMonth() + 1)
@@ -42,7 +41,6 @@ const yearItems = computed(() => {
   return Array.from({ length: last - first + 1 }, (_, index) => first + index)
 })
 
-// FullCalendar may hand back a Date, a Temporal object or a string.
 function toYearMonth(value) {
   if (!value) return null
 
@@ -58,8 +56,6 @@ function toYearMonth(value) {
   return match ? { year: Number(match[1]), month: Number(match[2]) } : null
 }
 
-// Re-applies the current events once the new month has rendered, so a jump
-// (Today / month picker) never leaves the view empty.
 function refreshEvents() {
   setTimeout(() => {
     calendarOptions.value.events = [...calendarOptions.value.events]
@@ -97,8 +93,6 @@ function goToToday() {
   viewYear.value = now.getFullYear()
 }
 
-/* ---------- Calendar ---------- */
-
 const statusColors = {
   scheduled: '#3858e9',
   completed: '#1b7f4b',
@@ -128,11 +122,9 @@ const calendarOptions = ref({
     emit('schedule-clicked', info.event.id)
   },
 
-  // Keeps the pickers in sync when the calendar's own prev/next buttons are used.
   datesSet(info) {
     const current = toYearMonth(info.view?.currentStart ?? info.start)
 
-    // Deferred so the state update doesn't land in the middle of FullCalendar's render.
     if (current) {
       setTimeout(() => {
         viewYear.value = current.year
@@ -172,7 +164,6 @@ async function loadSchedules(filters = {}) {
 
     calendarOptions.value.events = result.data.map((schedule) => ({
       id: schedule.id,
-      // In the "assigned" view, show who each schedule was given to.
       title:
         props.scope === 'assigned' && schedule.assignee
           ? `${schedule.title} · ${schedule.assignee.name}`
@@ -273,11 +264,6 @@ defineExpose({
 </template>
 
 <style scoped>
-/*
-  FullCalendar v7's Classic theme is configured through CSS variables,
-  so setting them on this wrapper restyles the calendar without touching
-  its internal class names.
-*/
 .schedule-calendar {
   --fc-classic-background: #ffffff;
   --fc-classic-primary: #3858e9;

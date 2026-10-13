@@ -47,7 +47,6 @@ async function togglePush() {
 onMounted(async () => {
   await refreshPushStatus()
 
-  // Make sure this browser's subscription belongs to whoever is logged in now.
   if (pushStatus.value === 'subscribed') {
     syncPushSubscription().catch((error) => console.error(error))
   }

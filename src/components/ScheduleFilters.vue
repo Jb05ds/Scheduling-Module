@@ -1,5 +1,4 @@
 <script setup>
-/* eslint-disable vue/no-mutating-props */
 import { computed } from 'vue'
 
 const props = defineProps({

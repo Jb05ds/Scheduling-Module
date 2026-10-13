@@ -13,7 +13,6 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from(raw, (char) => char.charCodeAt(0))
 }
 
-// A subscription is tied to the VAPID key it was created with.
 function usesKey(subscription, keyBytes) {
   const current = subscription.options?.applicationServerKey
 
@@ -45,7 +44,6 @@ async function saveSubscription(subscription) {
   }
 }
 
-/** 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed' */
 export async function getPushStatus() {
   if (!isPushSupported()) return 'unsupported'
   if (Notification.permission === 'denied') return 'denied'
@@ -79,7 +77,6 @@ export async function enablePush() {
   const keyBytes = urlBase64ToUint8Array(publicKey)
   let subscription = await registration.pushManager.getSubscription()
 
-  // Left over from different VAPID keys: replace it, otherwise sends would fail.
   if (subscription && !usesKey(subscription, keyBytes)) {
     await subscription.unsubscribe()
     subscription = null
@@ -95,7 +92,6 @@ export async function enablePush() {
   await saveSubscription(subscription)
 }
 
-/** Re-links this browser to the logged-in user (safe to call repeatedly). */
 export async function syncPushSubscription() {
   const subscription = await getSubscription()
 
@@ -120,7 +116,6 @@ export async function disablePush() {
   await subscription.unsubscribe()
 }
 
-/** Used on log out so the next person on this browser doesn't get your notifications. */
 export async function forgetPushSubscription() {
   if (!isPushSupported()) return
 

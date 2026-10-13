@@ -6,7 +6,6 @@ import { getCurrentUser } from '../services/auth'
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   users: { type: Array, default: () => [] },
-  // 'personal' = only for me (no assignee), 'assign' = hand it to someone else
   mode: { type: String, default: 'personal' },
 })
 
@@ -19,6 +18,8 @@ const serverError = ref('')
 const form = reactive({
   title: '',
   description: '',
+  repeat_type: '',
+  repeat_until: '',
   scheduled_date: '',
   start_time: '',
   end_time: '',
@@ -84,6 +85,8 @@ async function submit() {
       body: JSON.stringify({
         title: form.title,
         description: form.description || null,
+        repeat_type: form.repeat_type || null,
+        repeat_until: form.repeat_type ? form.repeat_until : null,
         scheduled_date: form.scheduled_date,
         start_time: form.start_time,
         end_time: form.end_time,
@@ -164,6 +167,36 @@ async function submit() {
             rounded="lg"
             rows="3"
             auto-grow
+          />
+
+          <v-select
+            v-model="form.repeat_type"
+            label="Repeat"
+            :items="[
+              { title: 'Does not repeat', value: '' },
+              { title: 'Daily', value: 'daily' },
+              { title: 'Weekly', value: 'weekly' },
+              { title: 'Monthly', value: 'monthly' },
+            ]"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            rounded="lg"
+          />
+
+          <v-text-field
+            v-if="form.repeat_type"
+            v-model="form.repeat_until"
+            label="Repeat until"
+            type="date"
+            :min="form.scheduled_date || undefined"
+            variant="outlined"
+            rounded="lg"
+            :rules="[
+              value => !!value || 'Choose an end date.',
+              value => !form.scheduled_date || value > form.scheduled_date
+                || 'End date must be after the first schedule date.'
+            ]"
           />
 
           <v-text-field
