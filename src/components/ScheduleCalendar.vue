@@ -1,5 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import echo from '../plugins/echo.js'
 
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/vue3/daygrid'
@@ -183,7 +185,33 @@ async function loadSchedules(filters = {}) {
   }
 }
 
-onMounted(loadSchedules)
+
+let scheduleChannel = null;
+
+onMounted(() => {
+  loadSchedules();
+
+  const user = JSON.parse(localStorage.getItem('auth_user') || 'null');
+
+  if (!user?.id) {
+    console.error('Cannot subscribe to schedule updates: user ID not found.');
+    return;
+  }
+
+  scheduleChannel = `user.${user.id}`;
+
+  echo.private(scheduleChannel)
+    .listen('.schedule.changed', () => {
+      loadSchedules();
+    });
+});
+
+onUnmounted(() => {
+  if (scheduleChannel) {
+    echo.leave(scheduleChannel);
+  }
+});
+
 
 defineExpose({
   loadSchedules,

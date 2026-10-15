@@ -11,6 +11,8 @@
   "dependencies": {
     "@fullcalendar/vue3": "^7.1.0",
     "@mdi/font": "^7.4.47",
+    "laravel-echo": "^2.6.1",
+    "pusher-js": "^8.6.0",
     "temporal-polyfill": "^1.0.5",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0",
