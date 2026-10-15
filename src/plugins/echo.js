@@ -10,7 +10,7 @@ const echo = new Echo({
     forceTLS: true,
 
     channelAuthorization: {
-        endpoint: `${import.meta.env.VITE_API_URL}/broadcasting/auth`,
+        endpoint: `${import.meta.env.VITE_API_BASE_URL}/broadcasting/auth`,
         headers: {
             Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
         },
